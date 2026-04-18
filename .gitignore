@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Environment variables (NEVER commit these!)
+.env
+.env.local
+.env*.local
+!.env.example
+
+# Prisma
+.prisma/client
+prisma/migrations/**/migration.sql
+!.prisma/client/index.d.ts
+!.prisma/client/index-browser.js
+
+# IDE / Editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS / Misc
+.DS_Store
+Thumbs.db
+*.log
+
+# Testing / Coverage
+coverage
+.nyc_output
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Local development
+*.sqlite
+*.db

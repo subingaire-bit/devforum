@@ -1,0 +1,187 @@
+// Licensed under MIT - Limbel Project
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js v5 compatible models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  username      String?   @unique @map("username")
+  bio           String?   @db.Text
+  website       String?
+  location      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  questions     Question[]
+  answers       Answer[]
+  votes         Vote[]
+  follows       Follow[]  @relation("follower")
+  following     Follow[]  @relation("following")
+  notifications Notification[]
+  reactions     Reaction[]
+
+  @@map("users")
+  @@index([email])
+  @@index([username])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Core Q&A Models (Phase 1 scaffold - implemented in Phase 2)
+model Question {
+  id          String   @id @default(cuid())
+  title       String   @db.VarChar(200)
+  slug        String   @unique @db.VarChar(250)
+  content     String   @db.Text
+  published   Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  answers     Answer[]
+  votes       Vote[]
+  tags        Tag[]    @relation("QuestionTags")
+
+  @@map("questions")
+  @@index([authorId])
+  @@index([slug])
+  @@index([published, createdAt])
+}
+
+model Answer {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  accepted  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+
+  votes   Vote[]
+  reactions Reaction[]
+
+  @@map("answers")
+  @@index([questionId])
+  @@index([authorId])
+}
+
+model Tag {
+  id        String     @id @default(cuid())
+  name      String     @unique @db.VarChar(50)
+  slug      String     @unique @db.VarChar(60)
+  createdAt DateTime   @default(now())
+
+  questions Question[] @relation("QuestionTags")
+
+  @@map("tags")
+  @@index([name])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  value     Int      // 1 for upvote, -1 for downvote
+  createdAt DateTime @default(now())
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String?
+  question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerId   String?
+  answer     Answer?   @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@unique([userId, answerId])
+  @@map("votes")
+  @@index([userId])
+}
+
+// Social Graph Models (Phase 3 scaffold)
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  type       String   // "answer", "comment", "follow", etc.
+  read       Boolean  @default(false)
+  content    String   @db.Text
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+  @@index([userId, read])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  type      String   // "like", "celebrate", "insightful", etc.
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answerId  String?
+  answer    Answer?  @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, answerId, type])
+  @@map("reactions")
+}
