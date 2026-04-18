@@ -35,7 +35,7 @@ Open-source Q&A forum for developers. Share knowledge, solve problems, grow toge
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/devforum.git
+git clone https://github.com/subingaire-bit/devforum.git
 cd devforum
 
 # 2. Install dependencies
